@@ -15,10 +15,23 @@ const app = new Hono();
 app.use('*', logger());
 app.use('*', cors());
 
-// Docs (public, no auth). Server URL di-derive dari request supaya
+// Docs (public, no auth). Server URL di-derive dari env atau request supaya
 // Swagger UI auto-match domain (localhost / Cloudflare / preview).
 app.get('/openapi.json', (c) => {
-  const proto = c.req.header('x-forwarded-proto') ?? new URL(c.req.url).protocol.replace(':', '');
+  if (env.PUBLIC_URL) {
+    return c.json(buildOpenApiSpec(env.PUBLIC_URL));
+  }
+  // Derive dari header. cf-visitor lebih reliable daripada x-forwarded-proto
+  // saat di belakang Cloudflare Flexible (yang kirim x-forwarded-proto=http
+  // meski user akses via https).
+  const cfVisitor = c.req.header('cf-visitor');
+  let proto: string | null = null;
+  if (cfVisitor) {
+    try {
+      proto = (JSON.parse(cfVisitor) as { scheme?: string }).scheme ?? null;
+    } catch {}
+  }
+  proto = proto ?? c.req.header('x-forwarded-proto') ?? new URL(c.req.url).protocol.replace(':', '');
   const host = c.req.header('x-forwarded-host') ?? c.req.header('host') ?? new URL(c.req.url).host;
   return c.json(buildOpenApiSpec(`${proto}://${host}`));
 });

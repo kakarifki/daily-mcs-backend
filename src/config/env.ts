@@ -8,6 +8,14 @@ const envSchema = z.object({
   UPLOAD_DIR: z.string().default('./storage/uploads'),
   OUTPUT_DIR: z.string().default('./storage/outputs'),
   MAX_UPLOAD_MB: z.coerce.number().default(20),
+  /**
+   * Public URL backend ini saat di-akses dari browser, misal
+   * https://api.domainmu.com. Kalau di-set, OpenAPI `servers` akan
+   * pakai ini langsung — anti-confused dengan Cloudflare Flexible
+   * yang kirim x-forwarded-proto=http meski user akses via https.
+   * Optional: kalau gak di-set, kita derive dari header request.
+   */
+  PUBLIC_URL: z.string().url().optional(),
 });
 
 const parsed = envSchema.safeParse(Bun.env);
