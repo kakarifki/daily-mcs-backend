@@ -11,6 +11,9 @@ FROM oven/bun:1.1.42-alpine AS build
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
+# Prisma generate butuh env var DATABASE_URL ada (sekedar bisa di-parse).
+# Tidak ada koneksi DB di tahap ini — placeholder cukup.
+ENV DATABASE_URL="postgresql://build:build@build:5432/build?schema=public"
 RUN bunx prisma generate
 
 # ---------- runtime ----------

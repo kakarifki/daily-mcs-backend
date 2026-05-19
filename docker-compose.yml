@@ -14,8 +14,10 @@ services:
       UPLOAD_DIR: /app/storage/uploads
       OUTPUT_DIR: /app/storage/outputs
       MAX_UPLOAD_MB: ${MAX_UPLOAD_MB:-20}
-    ports:
-      - "${APP_PORT:-3000}:3000"
+    # Container listen di 3000. Traefik (atau proxy lain) connect lewat
+    # Docker network ke port ini — tanpa publish ke host.
+    expose:
+      - "3000"
     volumes:
       - app_storage:/app/storage
 

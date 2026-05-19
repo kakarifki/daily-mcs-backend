@@ -26,3 +26,7 @@ prisma/migrations/dev.db*
 # Claude Code (personal/local config — settings.json boleh di-share kalau perlu)
 .claude/settings.local.json
 .claude/agents-cache/
+
+# Docker compose lokal-only override (publish port ke host).
+# Di production (Coolify), biarkan compose utama saja yang dipakai.
+docker-compose.override.yml
