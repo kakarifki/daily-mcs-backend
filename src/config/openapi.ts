@@ -2,7 +2,7 @@
  * OpenAPI 3.0 spec — manual-tulis supaya nggak butuh codegen / decorator.
  * Kalau ada endpoint baru, append di bawah. Swagger UI di /docs akan auto-pickup.
  */
-export const openApiSpec = {
+export const baseSpec = {
   openapi: '3.0.3',
   info: {
     title: 'daily-mcs-backend',
@@ -10,9 +10,6 @@ export const openApiSpec = {
     description:
       'Automation laporan harian Excel. Upload master + daily report → dapat .xlsx 9 pivot table.',
   },
-  servers: [
-    { url: 'http://localhost:3000', description: 'Local Docker' },
-  ],
   components: {
     securitySchemes: {
       ApiKeyAuth: {
@@ -358,3 +355,23 @@ export const openApiSpec = {
     },
   },
 } as const;
+
+/**
+ * Bangun OpenAPI spec dengan `servers` dinamis berdasarkan URL request masuk.
+ * Penting di balik reverse proxy (Cloudflare/Traefik) — Swagger UI akan
+ * pakai server URL yang sama dengan dari mana user akses /docs, bukan
+ * hardcoded localhost:3000.
+ */
+export function buildOpenApiSpec(requestUrl: string) {
+  let serverUrl = 'http://localhost:3000';
+  try {
+    const u = new URL(requestUrl);
+    serverUrl = `${u.protocol}//${u.host}`;
+  } catch {
+    // fallback to default
+  }
+  return {
+    ...baseSpec,
+    servers: [{ url: serverUrl, description: 'Current host' }],
+  };
+}

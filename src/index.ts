@@ -3,7 +3,7 @@ import { logger } from 'hono/logger';
 import { cors } from 'hono/cors';
 import { swaggerUI } from '@hono/swagger-ui';
 import { env } from '@/config/env';
-import { openApiSpec } from '@/config/openapi';
+import { buildOpenApiSpec } from '@/config/openapi';
 import { errorHandler } from '@/middleware/error-handler';
 import { apiKeyAuth } from '@/middleware/auth';
 import { healthRoutes } from '@/routes/health';
@@ -15,8 +15,13 @@ const app = new Hono();
 app.use('*', logger());
 app.use('*', cors());
 
-// Docs (public, no auth)
-app.get('/openapi.json', (c) => c.json(openApiSpec));
+// Docs (public, no auth). Server URL di-derive dari request supaya
+// Swagger UI auto-match domain (localhost / Cloudflare / preview).
+app.get('/openapi.json', (c) => {
+  const proto = c.req.header('x-forwarded-proto') ?? new URL(c.req.url).protocol.replace(':', '');
+  const host = c.req.header('x-forwarded-host') ?? c.req.header('host') ?? new URL(c.req.url).host;
+  return c.json(buildOpenApiSpec(`${proto}://${host}`));
+});
 app.get('/docs', swaggerUI({ url: '/openapi.json' }));
 
 app.route('/health', healthRoutes);
