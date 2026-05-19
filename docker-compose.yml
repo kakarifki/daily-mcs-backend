@@ -3,43 +3,23 @@ services:
     build: .
     image: daily-mcs-backend:latest
     restart: unless-stopped
-    depends_on:
-      db:
-        condition: service_healthy
     environment:
       NODE_ENV: production
       PORT: 3000
       API_KEY: ${API_KEY}
       # DATABASE_URL harus di-set eksplisit sebagai env var.
-      # Lokal: di .env. Coolify: di Environment Variables UI.
-      # Format: postgresql://USER:PASSWORD@HOST:5432/DB?schema=public
-      # Kalau pakai service `db` di compose ini, HOST = db (service name).
+      # Lokal: di .env (host = "db" karena ada service db di override).
+      # Coolify: di Environment Variables UI (host = nama service Postgres
+      #          di Coolify, biasanya "postgresql-xxxxxx" — cek di tab
+      #          "Connection" Postgres resource-mu).
       DATABASE_URL: ${DATABASE_URL}
       UPLOAD_DIR: /app/storage/uploads
       OUTPUT_DIR: /app/storage/outputs
       MAX_UPLOAD_MB: ${MAX_UPLOAD_MB:-20}
-    # Container listen di 3000. Traefik (atau proxy lain) connect lewat
-    # Docker network ke port ini — tanpa publish ke host.
     expose:
       - "3000"
     volumes:
       - app_storage:/app/storage
 
-  db:
-    image: postgres:16-alpine
-    restart: unless-stopped
-    environment:
-      POSTGRES_USER: ${POSTGRES_USER:-postgres}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
-      POSTGRES_DB: ${POSTGRES_DB:-daily_mcs}
-    volumes:
-      - db_data:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres}"]
-      interval: 5s
-      timeout: 5s
-      retries: 10
-
 volumes:
   app_storage:
-  db_data:
