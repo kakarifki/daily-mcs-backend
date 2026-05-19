@@ -1,0 +1,65 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Master data untuk VLOOKUP. Versioned by uploadBatch supaya bisa
+// rollback / audit kalau master bulan ini ternyata ada error.
+model MasterDataEntry {
+  id          String   @id @default(cuid())
+  lookupKey   String
+  payload     Json
+  batchId     String
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+
+  batch       MasterDataBatch @relation(fields: [batchId], references: [id], onDelete: Cascade)
+
+  @@index([lookupKey, isActive])
+  @@index([batchId])
+}
+
+model MasterDataBatch {
+  id          String   @id @default(cuid())
+  label       String
+  sourceFile  String?
+  rowCount    Int      @default(0)
+  isActive    Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  activatedAt DateTime?
+
+  entries     MasterDataEntry[]
+
+  @@index([isActive])
+}
+
+// Audit trail tiap kali user upload & generate report
+model ProcessingJob {
+  id            String         @id @default(cuid())
+  label         String?
+  status        JobStatus      @default(PENDING)
+  inputFile     String
+  inputFileName String?
+  outputFile    String?
+  inputRows     Int?
+  droppedRows   Int?
+  outputRows    Int?
+  errorMessage  String?
+  startedAt     DateTime       @default(now())
+  finishedAt    DateTime?
+
+  @@index([status])
+  @@index([startedAt])
+  @@index([label])
+}
+
+enum JobStatus {
+  PENDING
+  PROCESSING
+  SUCCESS
+  FAILED
+}
